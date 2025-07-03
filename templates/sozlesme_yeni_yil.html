@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header">
+                    <h4>Yeni Sözleşme Yılı Ekle</h4>
+                    <small>Sözleşme No: {{ sozlesme.id }} - {{ sozlesme.kira_bedeli }} TL</small>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Yıl No</label>
+                                <input type="number" name="yil_no" class="form-control" 
+                                       value="{{ (son_yil.yil_no + 1) if son_yil else 1 }}" readonly>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Kira Artış Oranı (%)</label>
+                                <input type="number" step="0.01" name="kira_artis_orani" 
+                                       id="artis_orani" class="form-control" 
+                                       placeholder="Örn: 25.5" onchange="hesaplaYeniKira()">
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Başlangıç Tarihi</label>
+                                <input type="date" name="baslangic_tarihi" id="baslangic_tarihi"
+                                       class="form-control" required
+                                       {% if son_yil %}
+                                       value="{{ yeni_baslangic if yeni_baslangic else sozlesme.baslangic_tarihi }}"
+                                       {% else %}
+                                       value="{{ sozlesme.baslangic_tarihi }}"
+                                       {% endif %}>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Bitiş Tarihi</label>
+                                <input type="date" name="bitis_tarihi" id="bitis_tarihi"
+                                       class="form-control" required>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Aylık Kira</label>
+                            <input type="number" step="0.01" name="aylik_kira" id="aylik_kira"
+                                   class="form-control" 
+                                   value="{{ son_yil.aylik_kira if son_yil else sozlesme.kira_bedeli }}"
+                                   required>
+                            <small class="text-muted" id="kira_bilgi">
+                                {% if son_yil %}
+                                    Önceki kira: {{ son_yil.aylik_kira }} TL
+                                {% else %}
+                                    İlk kira: {{ sozlesme.kira_bedeli }} TL
+                                {% endif %}
+                            </small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Notlar</label>
+                            <textarea name="notlar" class="form-control" rows="3"></textarea>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('sozlesme_detay', id=sozlesme.id) }}" 
+                               class="btn btn-secondary">İptal</a>
+                            <button type="submit" class="btn btn-primary">Kaydet</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Otomatik kira hesaplama
+function hesaplaYeniKira() {
+    var eskiKira = {{ son_yil.aylik_kira if son_yil else sozlesme.kira_bedeli }};
+    var artisOrani = document.getElementById('artis_orani').value;
+    
+    if (artisOrani) {
+        var yeniKira = eskiKira * (1 + (artisOrani / 100));
+        document.getElementById('aylik_kira').value = yeniKira.toFixed(2);
+        document.getElementById('kira_bilgi').innerHTML = 
+            'Önceki kira: ' + eskiKira + ' TL + %' + artisOrani + ' = ' + yeniKira.toFixed(2) + ' TL';
+    }
+}
+
+// Başlangıç tarihi değişince bitiş tarihini 1 yıl sonrası yap
+document.getElementById('baslangic_tarihi').addEventListener('change', function() {
+    var baslangic = new Date(this.value);
+    var bitis = new Date(baslangic);
+    bitis.setFullYear(bitis.getFullYear() + 1);
+    bitis.setDate(bitis.getDate() - 1);
+    
+    var bitisStr = bitis.toISOString().split('T')[0];
+    document.getElementById('bitis_tarihi').value = bitisStr;
+});
+
+// Sayfa yüklendiğinde bitiş tarihini ayarla
+window.onload = function() {
+    var baslangicInput = document.getElementById('baslangic_tarihi');
+    if (baslangicInput.value) {
+        baslangicInput.dispatchEvent(new Event('change'));
+    }
+}
+</script>
+{% endblock %}

@@ -26,6 +26,7 @@ def login_required(f):
 @app.route('/')
 @login_required
 def index():
+    
     # Yaklaşan sözleşmeleri al
     yaklasan_sozlesmeler = db.get_yaklasan_sozlesmeler()
     
@@ -169,9 +170,109 @@ def sozlesme_detay(id):
         flash('Sözleşme bulunamadı!', 'error')
         return redirect(url_for('sozlesme_listesi'))
     
+    # Sözleşme yıllarını getir
+    sozlesme_yillari = db.fetch_all("""
+        SELECT * FROM sozlesme_yillari 
+        WHERE sozlesme_id = %s 
+        ORDER BY yil_no DESC
+    """, (id,))
+    
     # Datetime objesi olarak kontrol et
     from datetime import datetime as dt
-    return render_template('sozlesme_detay.html', sozlesme=sozlesme, now=dt)
+    return render_template('sozlesme_detay.html', 
+                         sozlesme=sozlesme, 
+                         sozlesme_yillari=sozlesme_yillari,
+                         now=dt)
+# Sözleşmeye yeni yıl ekle
+@app.route('/sozlesme/<int:id>/yeni-yil', methods=['GET', 'POST'])
+@login_required
+def sozlesme_yeni_yil(id):
+    if request.method == 'POST':
+        # Form verilerini al
+        yil_no = request.form.get('yil_no')
+        baslangic_tarihi = request.form.get('baslangic_tarihi')
+        bitis_tarihi = request.form.get('bitis_tarihi')
+        aylik_kira = request.form.get('aylik_kira')
+        kira_artis_orani = request.form.get('kira_artis_orani')
+        notlar = request.form.get('notlar')
+        
+        # Veritabanına ekle
+        db.execute_query("""
+            INSERT INTO sozlesme_yillari 
+            (sozlesme_id, yil_no, baslangic_tarihi, bitis_tarihi, 
+             aylik_kira, kira_artis_orani, notlar)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+        """, (id, yil_no, baslangic_tarihi, bitis_tarihi, 
+              aylik_kira, kira_artis_orani, notlar))
+        
+        flash('Yeni sözleşme yılı eklendi!', 'success')
+        return redirect(url_for('sozlesme_detay', id=id))
+    
+    # En son yılın bilgilerini al
+    son_yil = db.fetch_one("""
+        SELECT * FROM sozlesme_yillari 
+        WHERE sozlesme_id = %s 
+        ORDER BY yil_no DESC 
+        LIMIT 1
+    """, (id,))
+    
+    sozlesme = db.fetch_one("SELECT * FROM sozlesmeler WHERE id = %s", (id,))
+    
+    # Yeni başlangıç tarihini hesapla
+    from datetime import datetime, timedelta
+    yeni_baslangic = None
+    if son_yil and son_yil.get('bitis_tarihi'):
+        if isinstance(son_yil['bitis_tarihi'], str):
+            bitis = datetime.strptime(son_yil['bitis_tarihi'], '%Y-%m-%d').date()
+        else:
+            bitis = son_yil['bitis_tarihi']
+        yeni_baslangic = (bitis + timedelta(days=1)).strftime('%Y-%m-%d')
+    
+    return render_template('sozlesme_yeni_yil.html', 
+                         sozlesme=sozlesme,
+                         son_yil=son_yil,
+                         yeni_baslangic=yeni_baslangic)
+# Sözleşme yılı düzenle    <--- BURADAN İTİBAREN YENİ KODLARI EKLEYİN
+@app.route('/sozlesme/<int:sozlesme_id>/yil/<int:yil_id>/duzenle', methods=['GET', 'POST'])
+@login_required
+def sozlesme_yil_duzenle(sozlesme_id, yil_id):
+    if request.method == 'POST':
+        # Form verilerini al
+        baslangic_tarihi = request.form.get('baslangic_tarihi')
+        bitis_tarihi = request.form.get('bitis_tarihi')
+        aylik_kira = request.form.get('aylik_kira')
+        kira_artis_orani = request.form.get('kira_artis_orani')
+        notlar = request.form.get('notlar')
+        
+        # Güncelle
+        db.execute_query("""
+            UPDATE sozlesme_yillari 
+            SET baslangic_tarihi = %s, bitis_tarihi = %s, 
+                aylik_kira = %s, kira_artis_orani = %s, notlar = %s
+            WHERE id = %s
+        """, (baslangic_tarihi, bitis_tarihi, aylik_kira, 
+              kira_artis_orani, notlar, yil_id))
+        
+        flash('Sözleşme yılı güncellendi!', 'success')
+        return redirect(url_for('sozlesme_detay', id=sozlesme_id))
+    
+    # Mevcut yıl bilgilerini getir
+    yil = db.fetch_one("SELECT * FROM sozlesme_yillari WHERE id = %s", (yil_id,))
+    sozlesme = db.fetch_one("SELECT * FROM sozlesmeler WHERE id = %s", (sozlesme_id,))
+    
+    return render_template('sozlesme_yil_duzenle.html', 
+                         sozlesme=sozlesme,
+                         yil=yil)
+
+# Sözleşme yılı sil
+@app.route('/sozlesme/<int:sozlesme_id>/yil/<int:yil_id>/sil')
+@login_required
+def sozlesme_yil_sil(sozlesme_id, yil_id):
+    # Yıl kaydını sil
+    db.execute_query("DELETE FROM sozlesme_yillari WHERE id = %s", (yil_id,))
+    
+    flash('Sözleşme yılı silindi!', 'success')
+    return redirect(url_for('sozlesme_detay', id=sozlesme_id))
 # PDF oluştur ve indir
 @app.route('/sozlesme/pdf/<int:id>')
 @login_required
@@ -290,6 +391,11 @@ def page_not_found(e):
 @app.errorhandler(500)
 def internal_error(e):
     return render_template('500.html'), 500
+# Favicon için özel route
+
+@app.route('/favicon.ico')
+def favicon():
+    return '', 204
 
 if __name__ == '__main__':
     # Veritabanı bağlantısını test et

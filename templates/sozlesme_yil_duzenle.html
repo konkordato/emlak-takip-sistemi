@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header">
+                    <h4>Sözleşme Yılı Düzenle</h4>
+                    <small>{{ yil.yil_no }}. Yıl - Sözleşme No: {{ sozlesme.id }}</small>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Yıl No</label>
+                                <input type="number" class="form-control" 
+                                       value="{{ yil.yil_no }}" disabled>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Kira Artış Oranı (%)</label>
+                                <input type="number" step="0.01" name="kira_artis_orani" 
+                                       id="artis_orani" class="form-control" 
+                                       value="{{ yil.kira_artis_orani if yil.kira_artis_orani else '' }}"
+                                       onchange="hesaplaYeniKira()">
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Başlangıç Tarihi</label>
+                                <input type="date" name="baslangic_tarihi" id="baslangic_tarihi"
+                                       class="form-control" required
+                                       value="{{ yil.baslangic_tarihi }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Bitiş Tarihi</label>
+                                <input type="date" name="bitis_tarihi" id="bitis_tarihi"
+                                       class="form-control" required
+                                       value="{{ yil.bitis_tarihi }}">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Aylık Kira</label>
+                            <input type="number" step="0.01" name="aylik_kira" id="aylik_kira"
+                                   class="form-control" 
+                                   value="{{ yil.aylik_kira }}"
+                                   required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Notlar</label>
+                            <textarea name="notlar" class="form-control" rows="3">{{ yil.notlar if yil.notlar else '' }}</textarea>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('sozlesme_detay', id=sozlesme.id) }}" 
+                               class="btn btn-secondary">İptal</a>
+                            <button type="submit" class="btn btn-primary">Güncelle</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Başlangıç tarihi değişince bitiş tarihini güncelle
+document.getElementById('baslangic_tarihi').addEventListener('change', function() {
+    var baslangic = new Date(this.value);
+    var bitis = new Date(baslangic);
+    bitis.setFullYear(bitis.getFullYear() + 1);
+    bitis.setDate(bitis.getDate() - 1);
+    
+    var bitisStr = bitis.toISOString().split('T')[0];
+    document.getElementById('bitis_tarihi').value = bitisStr;
+});
+</script>
+{% endblock %}
