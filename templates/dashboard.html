@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block title %}Ana Sayfa - Emlak Takip{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <h1>Hoş Geldiniz!</h1>
+    
+    <!-- İstatistik Kartları -->
+    <div class="stats-container">
+        <div class="stat-card">
+            <div class="stat-icon">📋</div>
+            <div class="stat-content">
+                <h3>Aktif Sözleşmeler</h3>
+                <p class="stat-number">{{ aktif_sayi }}</p>
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon">📁</div>
+            <div class="stat-content">
+                <h3>Pasif Sözleşmeler</h3>
+                <p class="stat-number">{{ pasif_sayi }}</p>
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon">⏰</div>
+            <div class="stat-content">
+                <h3>Yaklaşan Sözleşmeler</h3>
+                <p class="stat-number">{{ yaklasan_sozlesmeler|length }}</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Yaklaşan Sözleşmeler -->
+    {% if yaklasan_sozlesmeler %}
+    <div class="warning-section">
+        <h2>⚠️ Bitiş Tarihi Yaklaşan Sözleşmeler (60 gün içinde)</h2>
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Sözleşme No</th>
+                        <th>Kiracı</th>
+                        <th>Ev Sahibi</th>
+                        <th>Adres</th>
+                        <th>Bitiş Tarihi</th>
+                        <th>Kalan Gün</th>
+                        <th>İşlem</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for sozlesme in yaklasan_sozlesmeler %}
+                    <tr>
+                        <td>#{{ sozlesme.sozlesme_no }}</td>
+                        <td>{{ sozlesme.kiraci_adsoyad }}</td>
+                        <td>{{ sozlesme.sahip_adsoyad }}</td>
+                        <td>{{ sozlesme.mahalle }}, {{ sozlesme.ilce }}/{{ sozlesme.il }}</td>
+                        <td>{{ sozlesme.bitis_tarihi.strftime('%d.%m.%Y') }}</td>
+                        <td class="text-danger">
+                            {% set kalan = (sozlesme.bitis_tarihi - now().date()).days %}
+                            {{ kalan }} gün
+                        </td>
+                        <td>
+                            <a href="{{ url_for('sozlesme_detay', id=sozlesme.id) }}" class="btn btn-sm btn-info">Detay</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Hızlı İşlemler -->
+    <div class="quick-actions">
+        <h2>Hızlı İşlemler</h2>
+        <div class="action-buttons">
+            <a href="{{ url_for('sozlesme_ekle') }}" class="action-btn">
+                <span class="icon">➕</span>
+                <span>Yeni Sözleşme Ekle</span>
+            </a>
+            <a href="{{ url_for('sozlesme_listesi') }}" class="action-btn">
+                <span class="icon">📋</span>
+                <span>Sözleşmeleri Listele</span>
+            </a>
+            <a href="{{ url_for('raporlar') }}" class="action-btn">
+                <span class="icon">📊</span>
+                <span>Raporları Görüntüle</span>
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

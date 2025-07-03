@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+
+{% block title %}Raporlar - Emlak Takip{% endblock %}
+
+{% block content %}
+<div class="reports-container">
+    <h1>📊 Raporlar ve İstatistikler</h1>
+    
+    <!-- Özet Kartlar -->
+    <div class="summary-cards">
+        <div class="summary-card">
+            <h3>Bu Ay Yapılan Kiralamalar</h3>
+            <p class="big-number">
+                {% set current_month = aylik[0].sayi if aylik else 0 %}
+                {{ current_month }}
+            </p>
+        </div>
+        <div class="summary-card">
+            <h3>Toplam Aktif Kira Geliri</h3>
+            <p class="big-number">
+                {% set total_kira = aylik[0].toplam_kira if aylik else 0 %}
+                {{ "{:,.0f}".format(total_kira) }} TL
+            </p>
+        </div>
+        <div class="summary-card">
+            <h3>En Çok Kiralanan</h3>
+            <p class="big-number">
+                {% if tip_dagilim %}
+                    {{ tip_dagilim[0].gayrimenkul_tipi }}
+                {% else %}
+                    -
+                {% endif %}
+            </p>
+        </div>
+    </div>
+
+    <!-- Aylık Kiralama İstatistikleri -->
+    <div class="report-section">
+        <h2>📅 Aylık Kiralama İstatistikleri</h2>
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Yıl</th>
+                        <th>Ay</th>
+                        <th>Kiralama Sayısı</th>
+                        <th>Toplam Kira Geliri</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for stat in aylik %}
+                    <tr>
+                        <td>{{ stat.yil }}</td>
+                        <td>
+                            {% set aylar = ['', 'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 
+                                           'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'] %}
+                            {{ aylar[stat.ay] }}
+                        </td>
+                        <td>{{ stat.sayi }}</td>
+                        <td>{{ "{:,.2f}".format(stat.toplam_kira) }} TL</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Gayrimenkul Tipi Dağılımı -->
+    <div class="report-section">
+        <h2>🏢 Gayrimenkul Tipi Dağılımı</h2>
+        <div class="chart-container">
+            <canvas id="tipChart"></canvas>
+        </div>
+        <div class="table-responsive mt-3">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Gayrimenkul Tipi</th>
+                        <th>Adet</th>
+                        <th>Oran</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% set toplam = tip_dagilim | sum(attribute='sayi') %}
+                    {% for tip in tip_dagilim %}
+                    <tr>
+                        <td>{{ tip.gayrimenkul_tipi }}</td>
+                        <td>{{ tip.sayi }}</td>
+                        <td>{{ "%.1f" | format((tip.sayi / toplam * 100) if toplam > 0 else 0) }}%</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Danışman Performansı -->
+    <div class="report-section">
+        <h2>👔 Danışman Performans Raporu</h2>
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Danışman</th>
+                        <th>Toplam Kiralama</th>
+                        <th>Toplam Komisyon</th>
+                        <th>Performans</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for d in danisman %}
+                    <tr>
+                        <td>{{ d.kiraya_veren_danisman }}</td>
+                        <td>{{ d.toplam_kiralama }}</td>
+                        <td>{{ "{:,.2f}".format(d.toplam_komisyon or 0) }} TL</td>
+                        <td>
+                            <div class="progress">
+                                {% set max_kiralama = danisman[0].toplam_kiralama if danisman else 1 %}
+                                {% set yuzde = (d.toplam_kiralama / max_kiralama * 100) if max_kiralama > 0 else 0 %}
+                                <div class="progress-bar" data-percentage="{{ yuzde }}">
+                                    <span class="progress-text">{{ "%.0f" | format(yuzde) }}%</span>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Grafik verileri için gizli elementler -->
+<div id="chartData" style="display:none;">
+    {% if tip_dagilim %}
+        {% for tip in tip_dagilim %}
+        <span class="tip-item" data-label="{{ tip.gayrimenkul_tipi }}" data-value="{{ tip.sayi }}"></span>
+        {% endfor %}
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Sayfa yüklendiğinde çalışacak
+document.addEventListener('DOMContentLoaded', function() {
+    // Progress bar animasyonu
+    const progressBars = document.querySelectorAll('.progress-bar');
+    progressBars.forEach(bar => {
+        const percentage = bar.getAttribute('data-percentage');
+        if (percentage) {
+            setTimeout(() => {
+                bar.style.width = percentage + '%';
+            }, 100);
+        }
+    });
+    
+    // Grafik verilerini HTML'den al
+    const tipItems = document.querySelectorAll('.tip-item');
+    
+    if (tipItems.length > 0) {
+        const tipLabels = [];
+        const tipValues = [];
+        
+        tipItems.forEach(item => {
+            tipLabels.push(item.getAttribute('data-label'));
+            tipValues.push(parseInt(item.getAttribute('data-value')));
+        });
+        
+        // Pasta grafiği oluştur
+        const ctx = document.getElementById('tipChart');
+        if (ctx) {
+            new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: tipLabels,
+                    datasets: [{
+                        data: tipValues,
+                        backgroundColor: [
+                            '#FF6384', 
+                            '#36A2EB', 
+                            '#FFCE56', 
+                            '#4BC0C0', 
+                            '#9966FF', 
+                            '#FF9F40', 
+                            '#FF6384'
+                        ],
+                        borderWidth: 1,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: {
+                                padding: 15,
+                                font: {
+                                    size: 12
+                                }
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: 'Gayrimenkul Tipi Dağılımı',
+                            font: {
+                                size: 16
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    }
+});
+</script>
+{% endblock %}

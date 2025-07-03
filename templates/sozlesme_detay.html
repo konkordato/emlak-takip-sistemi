@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+
+{% block title %}Sözleşme #{{ sozlesme.sozlesme_no }} - Emlak Takip{% endblock %}
+
+{% block content %}
+<div class="detail-header">
+    <h1>Sözleşme Detayları #{{ sozlesme.sozlesme_no }}</h1>
+    <div style="display: flex; gap: 10px;">
+        <a href="{{ url_for('sozlesme_pdf', id=sozlesme.id) }}" class="btn btn-primary">📄 PDF İndir</a>
+        <button onclick="window.print()" class="btn btn-secondary">🖨️ Yazdır</button>
+        <a href="{{ url_for('sozlesme_listesi') }}" class="btn btn-secondary">← Geri</a>
+    </div>
+</div>
+    
+    <div class="detail-status">
+        {% if sozlesme.durum == 'aktif' %}
+            <span class="badge badge-success">✓ Aktif Sözleşme</span>
+        {% else %}
+            <span class="badge badge-danger">✗ Pasif Sözleşme</span>
+            <p><small>Pasife alınma tarihi: {{ sozlesme.pasife_alma_tarihi.strftime('%d.%m.%Y') if sozlesme.pasife_alma_tarihi else 'Belirtilmemiş' }}</small></p>
+            {% if sozlesme.pasife_alma_nedeni %}
+            <p><small>Neden: {{ sozlesme.pasife_alma_nedeni }}</small></p>
+            {% endif %}
+        {% endif %}
+    </div>
+
+    <div class="detail-grid">
+        <!-- Kiracı Bilgileri -->
+        <div class="detail-section">
+            <h3>👤 Kiracı Bilgileri</h3>
+            <table class="detail-table">
+                <tr>
+                    <td>Ad Soyad:</td>
+                    <td><strong>{{ sozlesme.kiraci_adsoyad }}</strong></td>
+                </tr>
+                <tr>
+                    <td>TC Kimlik No:</td>
+                    <td>{{ sozlesme.kiraci_tc }}</td>
+                </tr>
+                <tr>
+                    <td>Telefon 1:</td>
+                    <td>{{ sozlesme.kiraci_tel1 }}</td>
+                </tr>
+                <tr>
+                    <td>Telefon 2:</td>
+                    <td>{{ sozlesme.kiraci_tel2 or '-' }}</td>
+                </tr>
+                <tr>
+                    <td>E-posta:</td>
+                    <td>{{ sozlesme.kiraci_email or '-' }}</td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- Ev Sahibi Bilgileri -->
+        <div class="detail-section">
+            <h3>🏠 Ev Sahibi Bilgileri</h3>
+            <table class="detail-table">
+                <tr>
+                    <td>Ad Soyad:</td>
+                    <td><strong>{{ sozlesme.sahip_adsoyad }}</strong></td>
+                </tr>
+                <tr>
+                    <td>TC Kimlik No:</td>
+                    <td>{{ sozlesme.sahip_tc }}</td>
+                </tr>
+                <tr>
+                    <td>Telefon:</td>
+                    <td>{{ sozlesme.sahip_tel }}</td>
+                </tr>
+                <tr>
+                    <td>E-posta:</td>
+                    <td>{{ sozlesme.sahip_email or '-' }}</td>
+                </tr>
+                <tr>
+                    <td>Banka:</td>
+                    <td>{{ sozlesme.sahip_banka or '-' }}</td>
+                </tr>
+                <tr>
+                    <td>IBAN:</td>
+                    <td>{{ sozlesme.sahip_iban or '-' }}</td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- Gayrimenkul Bilgileri -->
+        <div class="detail-section">
+            <h3>🏢 Gayrimenkul Bilgileri</h3>
+            <table class="detail-table">
+                <tr>
+                    <td>Gayrimenkul Tipi:</td>
+                    <td><strong>{{ sozlesme.gayrimenkul_tipi }}</strong></td>
+                </tr>
+                <tr>
+                    <td>İl:</td>
+                    <td>{{ sozlesme.il }}</td>
+                </tr>
+                <tr>
+                    <td>İlçe:</td>
+                    <td>{{ sozlesme.ilce }}</td>
+                </tr>
+                <tr>
+                    <td>Mahalle:</td>
+                    <td>{{ sozlesme.mahalle }}</td>
+                </tr>
+                <tr>
+                    <td>Adres:</td>
+                    <td>{{ sozlesme.adres }}</td>
+                </tr>
+                <tr>
+                    <td>Daire No:</td>
+                    <td>{{ sozlesme.daire_no or '-' }}</td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- Danışman Bilgileri -->
+        <div class="detail-section">
+            <h3>👔 Danışman Bilgileri</h3>
+            <table class="detail-table">
+                <tr>
+                    <td>Portföy Danışmanı:</td>
+                    <td>{{ sozlesme.portfolyo_danisman or '-' }}</td>
+                </tr>
+                <tr>
+                    <td>Kiraya Veren Danışman:</td>
+                    <td><strong>{{ sozlesme.kiraya_veren_danisman }}</strong></td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- Sözleşme Detayları -->
+        <div class="detail-section full-width">
+            <h3>📋 Sözleşme Detayları</h3>
+            <table class="detail-table">
+                <tr>
+                    <td>Başlangıç Tarihi:</td>
+                    <td><strong>{{ sozlesme.baslangic_tarihi.strftime('%d.%m.%Y') }}</strong></td>
+                    <td>Bitiş Tarihi:</td>
+                    <td><strong>{{ sozlesme.bitis_tarihi.strftime('%d.%m.%Y') }}</strong></td>
+                </tr>
+                <tr>
+                    <td>Aylık Kira Bedeli:</td>
+                    <td><strong>{{ "{:,.2f}".format(sozlesme.kira_bedeli) }} TL</strong></td>
+                    <td>Depozito:</td>
+                    <td>{{ "{:,.2f}".format(sozlesme.depozito) if sozlesme.depozito else '-' }} TL</td>
+                </tr>
+                <tr>
+                    <td>Ödeme Günü:</td>
+                    <td>Her ayın <strong>{{ sozlesme.odeme_gunu }}.</strong> günü</td>
+                    <td>Kira Artış Oranı:</td>
+                    <td>{{ sozlesme.kira_artis_orani if sozlesme.kira_artis_orani else '-' }}%</td>
+                </tr>
+                <tr>
+                    <td>Komisyon Tutarı:</td>
+                    <td>{{ "{:,.2f}".format(sozlesme.komisyon_tutari) if sozlesme.komisyon_tutari else '-' }} TL</td>
+                    <td>Komisyon Notu:</td>
+                    <td>{{ sozlesme.komisyon_notu or '-' }}</td>
+                </tr>
+            </table>
+            {% if sozlesme.notlar %}
+            <div class="notes-section">
+                <h4>Notlar:</h4>
+                <p>{{ sozlesme.notlar }}</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="detail-footer">
+        <p><small>Kayıt Tarihi: {{ sozlesme.kayit_tarihi.strftime('%d.%m.%Y %H:%M') }}</small></p>
+    </div>
+</div>
+{% endblock %}

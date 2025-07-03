@@ -1,0 +1,216 @@
+{% extends "base.html" %}
+
+{% block title %}Yeni Sözleşme Ekle - Emlak Takip{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <h1>Yeni Sözleşme Ekle</h1>
+    
+    <form method="POST" action="{{ url_for('sozlesme_ekle') }}" class="sozlesme-form">
+        <!-- Kiracı Bilgileri -->
+        <div class="form-section">
+            <h3>👤 Kiracı Bilgileri</h3>
+            <div class="form-row">
+                <div class="form-group col-md-6">
+                    <label for="kiraci_adsoyad">Ad Soyad *</label>
+                    <input type="text" id="kiraci_adsoyad" name="kiraci_adsoyad" required>
+                </div>
+                <div class="form-group col-md-6">
+                    <label for="kiraci_tc">TC Kimlik No *</label>
+                    <input type="text" id="kiraci_tc" name="kiraci_tc" maxlength="11" required>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group col-md-4">
+                    <label for="kiraci_tel1">Telefon 1 *</label>
+                    <input type="tel" id="kiraci_tel1" name="kiraci_tel1" required>
+                </div>
+                <div class="form-group col-md-4">
+                    <label for="kiraci_tel2">Telefon 2</label>
+                    <input type="tel" id="kiraci_tel2" name="kiraci_tel2">
+                </div>
+                <div class="form-group col-md-4">
+                    <label for="kiraci_email">E-posta</label>
+                    <input type="email" id="kiraci_email" name="kiraci_email">
+                </div>
+            </div>
+        </div>
+
+        <!-- Ev Sahibi Bilgileri -->
+        <div class="form-section">
+            <h3>🏠 Ev Sahibi Bilgileri</h3>
+            <div class="form-row">
+                <div class="form-group col-md-6">
+                    <label for="sahip_adsoyad">Ad Soyad *</label>
+                    <input type="text" id="sahip_adsoyad" name="sahip_adsoyad" required>
+                </div>
+                <div class="form-group col-md-6">
+                    <label for="sahip_tc">TC Kimlik No *</label>
+                    <input type="text" id="sahip_tc" name="sahip_tc" maxlength="11" required>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group col-md-4">
+                    <label for="sahip_tel">Telefon *</label>
+                    <input type="tel" id="sahip_tel" name="sahip_tel" required>
+                </div>
+                <div class="form-group col-md-4">
+                    <label for="sahip_email">E-posta</label>
+                    <input type="email" id="sahip_email" name="sahip_email">
+                </div>
+                <div class="form-group col-md-4">
+                    <label for="sahip_banka">Banka</label>
+                    <input type="text" id="sahip_banka" name="sahip_banka">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="sahip_iban">IBAN</label>
+                <input type="text" id="sahip_iban" name="sahip_iban" maxlength="26" placeholder="TR00 0000 0000 0000 0000 0000 00">
+            </div>
+        </div>
+
+        <!-- Gayrimenkul Bilgileri -->
+        <div class="form-section">
+            <h3>🏢 Gayrimenkul Bilgileri</h3>
+            <div class="form-row">
+                <div class="form-group col-md-4">
+                    <label for="il">İl *</label>
+                    <input type="text" id="il" name="il" required>
+                </div>
+                <div class="form-group col-md-4">
+                    <label for="ilce">İlçe *</label>
+                    <input type="text" id="ilce" name="ilce" required>
+                </div>
+                <div class="form-group col-md-4">
+                    <label for="mahalle">Mahalle *</label>
+                    <input type="text" id="mahalle" name="mahalle" required>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group col-md-8">
+                    <label for="adres">Açık Adres *</label>
+                    <textarea id="adres" name="adres" rows="2" required></textarea>
+                </div>
+                <div class="form-group col-md-4">
+                    <label for="daire_no">Daire/Kapı No</label>
+                    <input type="text" id="daire_no" name="daire_no">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="gayrimenkul_tipi">Gayrimenkul Tipi *</label>
+                <select id="gayrimenkul_tipi" name="gayrimenkul_tipi" required>
+                    <option value="">Seçiniz</option>
+                    <option value="Daire">Daire</option>
+                    <option value="Dükkan">Dükkan</option>
+                    <option value="Villa">Villa</option>
+                    <option value="Ofis">Ofis</option>
+                    <option value="Depo">Depo</option>
+                    <option value="Arsa">Arsa</option>
+                    <option value="Diğer">Diğer</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Danışman Bilgileri -->
+        <div class="form-section">
+            <h3>👔 Danışman Bilgileri</h3>
+            <div class="form-row">
+                <div class="form-group col-md-6">
+                    <label for="portfolyo_danisman">Portföy Danışmanı</label>
+                    <input type="text" id="portfolyo_danisman" name="portfolyo_danisman">
+                </div>
+                <div class="form-group col-md-6">
+                    <label for="kiraya_veren_danisman">Kiraya Veren Danışman *</label>
+                    <input type="text" id="kiraya_veren_danisman" name="kiraya_veren_danisman" required>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sözleşme Detayları -->
+        <div class="form-section">
+            <h3>📋 Sözleşme Detayları</h3>
+            <div class="form-row">
+                <div class="form-group col-md-6">
+                    <label for="baslangic_tarihi">Başlangıç Tarihi *</label>
+                    <input type="date" id="baslangic_tarihi" name="baslangic_tarihi" required>
+                </div>
+                <div class="form-group col-md-6">
+                    <label for="bitis_tarihi">Bitiş Tarihi *</label>
+                    <input type="date" id="bitis_tarihi" name="bitis_tarihi" required>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group col-md-4">
+                    <label for="kira_bedeli">Aylık Kira Bedeli (TL) *</label>
+                    <input type="number" id="kira_bedeli" name="kira_bedeli" step="0.01" required>
+                </div>
+                <div class="form-group col-md-4">
+                    <label for="depozito">Depozito (TL)</label>
+                    <input type="number" id="depozito" name="depozito" step="0.01">
+                </div>
+                <div class="form-group col-md-4">
+                    <label for="odeme_gunu">Ödeme Günü *</label>
+                    <input type="number" id="odeme_gunu" name="odeme_gunu" min="1" max="31" required>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group col-md-4">
+                    <label for="kira_artis_orani">Kira Artış Oranı (%)</label>
+                    <input type="number" id="kira_artis_orani" name="kira_artis_orani" step="0.01">
+                </div>
+                <div class="form-group col-md-4">
+                    <label for="komisyon_tutari">Komisyon Tutarı (TL)</label>
+                    <input type="number" id="komisyon_tutari" name="komisyon_tutari" step="0.01">
+                </div>
+                <div class="form-group col-md-4">
+                    <label for="komisyon_notu">Komisyon Notu</label>
+                    <input type="text" id="komisyon_notu" name="komisyon_notu">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="notlar">Notlar</label>
+                <textarea id="notlar" name="notlar" rows="3"></textarea>
+            </div>
+        </div>
+
+        <!-- Butonlar -->
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Sözleşmeyi Kaydet</button>
+            <a href="{{ url_for('index') }}" class="btn btn-secondary">İptal</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// TC Kimlik No sadece rakam
+document.getElementById('kiraci_tc').addEventListener('input', function(e) {
+    this.value = this.value.replace(/[^0-9]/g, '');
+});
+document.getElementById('sahip_tc').addEventListener('input', function(e) {
+    this.value = this.value.replace(/[^0-9]/g, '');
+});
+
+// Telefon formatı
+function formatPhone(input) {
+    let value = input.value.replace(/\D/g, '');
+    if (value.length > 0) {
+        if (value.length <= 3) {
+            value = value;
+        } else if (value.length <= 6) {
+            value = value.slice(0, 3) + ' ' + value.slice(3);
+        } else if (value.length <= 8) {
+            value = value.slice(0, 3) + ' ' + value.slice(3, 6) + ' ' + value.slice(6);
+        } else {
+            value = value.slice(0, 3) + ' ' + value.slice(3, 6) + ' ' + value.slice(6, 8) + ' ' + value.slice(8, 11);
+        }
+    }
+    input.value = value;
+}
+
+document.getElementById('kiraci_tel1').addEventListener('input', function() { formatPhone(this); });
+document.getElementById('kiraci_tel2').addEventListener('input', function() { formatPhone(this); });
+document.getElementById('sahip_tel').addEventListener('input', function() { formatPhone(this); });
+</script>
+{% endblock %}
