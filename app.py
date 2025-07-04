@@ -7,6 +7,8 @@ import os
 from email_service import EmailService
 from pdf_service import PDFService
 from flask import send_file
+from functools import wraps
+from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user 
 
 app = Flask(__name__)
 app.secret_key = SECRET_KEY
@@ -21,7 +23,21 @@ def login_required(f):
         return f(*args, **kwargs)
     decorated_function.__name__ = f.__name__
     return decorated_function
-
+# Admin kontrolü decorator
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated:
+            return redirect(url_for('login'))
+        
+        # Kullanıcının rolünü kontrol et
+        user = db.fetch_one("SELECT rol FROM kullanicilar WHERE id = %s", (current_user.id,))
+        if not user or user['rol'] != 'super_admin':
+            flash('Bu sayfaya erişim yetkiniz yok!', 'error')
+            return redirect(url_for('index'))
+        
+        return f(*args, **kwargs)
+    return decorated_function
 # Ana sayfa
 @app.route('/')
 @login_required
@@ -38,7 +54,98 @@ def index():
                          yaklasan_sozlesmeler=yaklasan_sozlesmeler,
                          aktif_sayi=aktif_sozlesme_sayisi['sayi'] if aktif_sozlesme_sayisi else 0,
                          pasif_sayi=pasif_sozlesme_sayisi['sayi'] if pasif_sozlesme_sayisi else 0)
+@app.route('/logout')
+def logout():
+    # ... logout kodu ...
+    return redirect(url_for('login'))
 
+# Kullanıcı listesi (sadece super admin)  <-- BURAYA EKLEYEBİLİRSİNİZ
+@app.route('/kullanicilar')
+@admin_required
+def kullanici_listesi():
+    kullanicilar = db.fetch_all("""
+        SELECT id, kullanici_adi, ad_soyad, email, rol, created_at 
+        FROM kullanicilar 
+        ORDER BY created_at DESC
+    """)
+    return render_template('kullanici_listesi.html', kullanicilar=kullanicilar)
+# Yeni kullanıcı ekle
+@app.route('/kullanici/ekle', methods=['GET', 'POST'])
+@admin_required
+def kullanici_ekle():
+    if request.method == 'POST':
+        kullanici_adi = request.form.get('kullanici_adi')
+        sifre = request.form.get('sifre')
+        ad_soyad = request.form.get('ad_soyad')
+        email = request.form.get('email')
+        rol = request.form.get('rol')
+        
+        # Kullanıcı adı kontrolü
+        mevcut = db.fetch_one("SELECT id FROM kullanicilar WHERE kullanici_adi = %s", (kullanici_adi,))
+        if mevcut:
+            flash('Bu kullanıcı adı zaten kullanılıyor!', 'error')
+            return render_template('kullanici_ekle.html')
+        
+        # Şifreyi hashle
+        from werkzeug.security import generate_password_hash
+        hash_sifre = generate_password_hash(sifre)
+        
+        # Kullanıcıyı ekle
+        db.execute_query("""
+            INSERT INTO kullanicilar (kullanici_adi, sifre, ad_soyad, email, rol)
+            VALUES (%s, %s, %s, %s, %s)
+        """, (kullanici_adi, hash_sifre, ad_soyad, email, rol))
+        
+        flash('Kullanıcı başarıyla eklendi!', 'success')
+        return redirect(url_for('kullanici_listesi'))
+    
+    return render_template('kullanici_ekle.html')
+
+# Kullanıcı düzenle
+@app.route('/kullanici/<int:id>/duzenle', methods=['GET', 'POST'])
+@admin_required
+def kullanici_duzenle(id):
+    if request.method == 'POST':
+        ad_soyad = request.form.get('ad_soyad')
+        email = request.form.get('email')
+        rol = request.form.get('rol')
+        yeni_sifre = request.form.get('yeni_sifre')
+        
+        if yeni_sifre:
+            # Yeni şifre varsa hashle ve güncelle
+            from werkzeug.security import generate_password_hash
+            hash_sifre = generate_password_hash(yeni_sifre)
+            db.execute_query("""
+                UPDATE kullanicilar 
+                SET ad_soyad = %s, email = %s, rol = %s, sifre = %s
+                WHERE id = %s
+            """, (ad_soyad, email, rol, hash_sifre, id))
+        else:
+            # Şifre yoksa diğer bilgileri güncelle
+            db.execute_query("""
+                UPDATE kullanicilar 
+                SET ad_soyad = %s, email = %s, rol = %s
+                WHERE id = %s
+            """, (ad_soyad, email, rol, id))
+        
+        flash('Kullanıcı bilgileri güncellendi!', 'success')
+        return redirect(url_for('kullanici_listesi'))
+    
+    kullanici = db.fetch_one("SELECT * FROM kullanicilar WHERE id = %s", (id,))
+    return render_template('kullanici_duzenle.html', kullanici=kullanici)
+
+# Kullanıcı sil
+@app.route('/kullanici/<int:id>/sil')
+@admin_required
+def kullanici_sil(id):
+    # Kendini silmeye çalışıyor mu kontrol et
+    if current_user.id == id:
+        flash('Kendinizi silemezsiniz!', 'error')
+        return redirect(url_for('kullanici_listesi'))
+    
+    db.execute_query("DELETE FROM kullanicilar WHERE id = %s", (id,))
+    flash('Kullanıcı silindi!', 'success')
+    return redirect(url_for('kullanici_listesi'))
 # Giriş sayfası
 @app.route('/login', methods=['GET', 'POST'])
 def login():
