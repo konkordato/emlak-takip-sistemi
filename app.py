@@ -27,12 +27,11 @@ def login_required(f):
 def admin_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if not current_user.is_authenticated:
+        if 'user_id' not in session:
             return redirect(url_for('login'))
         
-        # Kullanıcının rolünü kontrol et
-        user = db.fetch_one("SELECT rol FROM kullanicilar WHERE id = %s", (current_user.id,))
-        if not user or user['rol'] != 'super_admin':
+        # Kullanıcının rolünü session'dan kontrol et
+        if session.get('user_rol') != 'super_admin':
             flash('Bu sayfaya erişim yetkiniz yok!', 'error')
             return redirect(url_for('index'))
         
@@ -54,20 +53,24 @@ def index():
                          yaklasan_sozlesmeler=yaklasan_sozlesmeler,
                          aktif_sayi=aktif_sozlesme_sayisi['sayi'] if aktif_sozlesme_sayisi else 0,
                          pasif_sayi=pasif_sozlesme_sayisi['sayi'] if pasif_sozlesme_sayisi else 0)
-@app.route('/logout')
-def logout():
-    # ... logout kodu ...
-    return redirect(url_for('login'))
 
-# Kullanıcı listesi (sadece super admin)  <-- BURAYA EKLEYEBİLİRSİNİZ
+
+# Kullanıcı listesi (sadece super admin)
 @app.route('/kullanicilar')
 @admin_required
 def kullanici_listesi():
+    # Debug için yazdıralım
+    print("Kullanıcı listesi çağrıldı!")
+    
     kullanicilar = db.fetch_all("""
-        SELECT id, kullanici_adi, ad_soyad, email, rol, created_at 
+        SELECT id, kullanici_adi, ad_soyad, email, rol 
         FROM kullanicilar 
-        ORDER BY created_at DESC
+        ORDER BY id DESC
     """)
+    
+    # Kaç kullanıcı bulundu yazdıralım
+    print(f"Toplam {len(kullanicilar)} kullanıcı bulundu")
+    
     return render_template('kullanici_listesi.html', kullanicilar=kullanicilar)
 # Yeni kullanıcı ekle
 @app.route('/kullanici/ekle', methods=['GET', 'POST'])
@@ -163,6 +166,7 @@ def login():
         if user:
             session['user_id'] = user['id']
             session['user_name'] = user['ad_soyad']
+            session['user_rol'] = user['rol']  
             print(f"Giriş başarılı! Yönlendiriliyor...")  # Debug için
             return redirect(url_for('index'))
         else:
